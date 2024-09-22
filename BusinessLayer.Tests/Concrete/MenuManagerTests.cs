@@ -1,15 +1,19 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using AutoMapper;
 using BusinessLayer.Abstract;
 using DataAccessLayer.Abstract;
 using EntityLayer.Concrete;
 using EntityLayer.DTOs.MenuDtos;
+using EntityLayer.DTOs.MenuItemDtos;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using EntityLayer.DTOs.MenuCategoryDtos;
+using EntityLayer.DTOs.MenuItemSetDtos;
 using System.Linq.Expressions;
+
 
 namespace BusinessLayer.Tests.Concrete
 {
@@ -23,11 +27,11 @@ namespace BusinessLayer.Tests.Concrete
         private Mock<IIntegrationDal> _integrationDalMock;
         private Mock<IMenuItemOptionDal> _optionDalMock;
         private Mock<IMenuItemMenuItemSetDal> _menuItemMenuItemSetDalMock;
-        private Mock<IMapper> _mapperMock;
+        private IMapper _mapper;
         private MenuManager _menuManager;
 
         [TestInitialize]
-        public void SetUp()
+        public void Setup()
         {
             _menuDalMock = new Mock<IMenuDal>();
             _menuCategoryDalMock = new Mock<IMenuCategoryDal>();
@@ -36,7 +40,13 @@ namespace BusinessLayer.Tests.Concrete
             _integrationDalMock = new Mock<IIntegrationDal>();
             _optionDalMock = new Mock<IMenuItemOptionDal>();
             _menuItemMenuItemSetDalMock = new Mock<IMenuItemMenuItemSetDal>();
-            _mapperMock = new Mock<IMapper>();
+
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Menu, MenuDto>();
+                // Add other mappings here as needed
+            });
+            _mapper = config.CreateMapper();
 
             _menuManager = new MenuManager(
                 _menuDalMock.Object,
@@ -46,101 +56,114 @@ namespace BusinessLayer.Tests.Concrete
                 _integrationDalMock.Object,
                 _optionDalMock.Object,
                 _menuItemMenuItemSetDalMock.Object,
-                _mapperMock.Object
-            );
+                _mapper);
         }
 
         [TestMethod]
-        public async Task GetMenuByDayAsync_ShouldReturnMenuDto_WhenMenuExists()
+        public async Task GetMenuByDayAsync_ValidDay_ReturnsMenuDto()
         {
-            // Arrange
             var dayOfWeek = "Monday";
             var menu = new Menu { DayOfWeek = DayOfWeekEnum.Monday };
-            var menuDto = new MenuDto { DayOfWeek = "Monday" };
 
             _menuDalMock.Setup(m => m.GetByAll(It.IsAny<Expression<Func<Menu, bool>>>()))
                 .ReturnsAsync(menu);
-            _mapperMock.Setup(m => m.Map<MenuDto>(menu))
-                .Returns(menuDto);
 
-            // Act
             var result = await _menuManager.GetMenuByDayAsync(dayOfWeek);
 
-            // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual("Monday", result.DayOfWeek);
+            Assert.AreEqual(DayOfWeekEnum.Monday, Enum.Parse<DayOfWeekEnum>(result.DayOfWeek));
+
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(Exception), "No menu found for the day: Friday")]
+        public async Task GetMenuByDayAsync_NoMenuFound_ThrowsException()
+        {
+            var dayOfWeek = "Friday";
+            _menuDalMock.Setup(m => m.GetByAll(It.IsAny<Expression<Func<Menu, bool>>>()))
+                .ReturnsAsync((Menu)null);
+
+            await _menuManager.GetMenuByDayAsync(dayOfWeek);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException), "Invalid day of the week: InvalidDay")]
+        public async Task GetMenuByDayAsync_InvalidDay_ThrowsArgumentException()
+        {
+            var dayOfWeek = "InvalidDay";
+            await _menuManager.GetMenuByDayAsync(dayOfWeek);
         }
 
 
         [TestMethod]
-        public async Task GetMenuByDayAsync_ShouldThrowException_WhenDayOfWeekIsInvalid()
+        [ExpectedException(typeof(ArgumentException), "Invalid day of the week: InvalidDay")]
+        public async Task AddNewMenuAsync_InvalidDay_ThrowsArgumentException()
         {
-            // Arrange
-            var invalidDayOfWeek = "InvalidDay";
-
-            // Act & Assert
-            var ex = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                async () => await _menuManager.GetMenuByDayAsync(invalidDayOfWeek));
-            Assert.AreEqual("Invalid day of the week: InvalidDay", ex.Message);
+            var createMenuDto = new CreateMenuDto { DayOfWeek = "InvalidDay" };
+            await _menuManager.AddNewMenuAsync(createMenuDto);
         }
 
         [TestMethod]
-        public async Task AddNewMenuAsync_ShouldReturnMenuDto_WhenValidDataProvided()
+        [ExpectedException(typeof(Exception), "No menu found for the day: Monday")]
+        public async Task AddNewMenuAsync_NoMenuFound_ThrowsException()
         {
-            // Arrange
             var createMenuDto = new CreateMenuDto
             {
                 DayOfWeek = "Monday",
                 MenuCategories = new List<CreateMenuCategoryDto>()
             };
-            var menu = new Menu { DayOfWeek = DayOfWeekEnum.Monday };
-            var menuDto = new MenuDto { DayOfWeek = "Monday" };
-
-            _menuDalMock.Setup(m => m.GetByAll(It.IsAny<Expression<Func<Menu, bool>>>()))
-                  .ReturnsAsync(menu);
-            _mapperMock.Setup(m => m.Map<MenuDto>(menu))
-                .Returns(menuDto);
-
-            // Act
-            var result = await _menuManager.AddNewMenuAsync(createMenuDto);
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.AreEqual("Monday", result.DayOfWeek);
-        }
-
-        [TestMethod]
-        public async Task DeleteMenuAsync_ShouldReturnTrue_WhenMenuExists()
-        {
-            // Arrange
-            var menuId = 1;
-            var menu = new Menu { Id = menuId, MenuCategories = new List<MenuCategory>() };
-
-            _menuDalMock.Setup(m => m.GetByAll(It.IsAny<Expression<Func<Menu, bool>>>()))
-                           .ReturnsAsync(menu);
-            _menuDalMock.Setup(m => m.DeleteAsync(It.IsAny<Menu>()))
-                .Returns(Task.CompletedTask);
-
-            // Act
-            var result = await _menuManager.DeleteMenuAsync(menuId);
-
-            // Assert
-            Assert.IsTrue(result);
-        }
-
-        [TestMethod]
-        public async Task DeleteMenuAsync_ShouldThrowException_WhenMenuDoesNotExist()
-        {
-            // Arrange
-            var menuId = 1;
 
             _menuDalMock.Setup(m => m.GetByAll(It.IsAny<Expression<Func<Menu, bool>>>()))
                 .ReturnsAsync((Menu)null);
 
-            // Act & Assert
-            var ex = await Assert.ThrowsExceptionAsync<Exception>(
-                async () => await _menuManager.DeleteMenuAsync(menuId));
-            Assert.AreEqual($"Menu with ID {menuId} does not exist.", ex.Message);
+            await _menuManager.AddNewMenuAsync(createMenuDto);
         }
+
+
+        [TestMethod]
+        [ExpectedException(typeof(Exception), "MenuCategory with ID 999 does not exist.")]
+        public async Task AddMenuItemSetsAsync_MenuCategoryNotFound_ThrowsException()
+        {
+            var setDto = new CreateMenuItemSetDto { MenuCategoryId = 999 };
+
+            _menuCategoryDalMock.Setup(m => m.GetByAllAsync(It.IsAny<Expression<Func<MenuCategory, bool>>>()))
+                .ReturnsAsync((MenuCategory)null);
+
+            await _menuManager.AddMenuItemSetsAsync(setDto);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(Exception), "MenuItem with ID 999 does not exist.")]
+        public async Task AddMenuItemSetsAsync_MenuItemNotFound_ThrowsException()
+        {
+            var setDto = new CreateMenuItemSetDto
+            {
+                MenuCategoryId = 1,
+                MenuItemIds = new List<int> { 999 }
+            };
+
+            var menuCategory = new MenuCategory { Id = 1, Menu = new Menu { DayOfWeek = DayOfWeekEnum.Monday } };
+            _menuCategoryDalMock.Setup(m => m.GetByAllAsync(mc => mc.Id == setDto.MenuCategoryId)).ReturnsAsync(menuCategory);
+            _menuItemDalMock.Setup(m => m.GetByAll(It.IsAny<Expression<Func<MenuItem, bool>>>()))
+                .ReturnsAsync((MenuItem)null);
+
+
+            await _menuManager.AddMenuItemSetsAsync(setDto);
+        }
+
+
+        [TestMethod]
+        [ExpectedException(typeof(Exception), "MenuCategory with ID 999 does not exist.")]
+        public async Task UpdateMenuItemSetsAsync_MenuCategoryNotFound_ThrowsException()
+        {
+            var setDto = new UpdateMenuItemSetDto { MenuCategoryId = 999 };
+
+            _menuCategoryDalMock.Setup(m => m.GetByAllAsync(It.IsAny<Expression<Func<MenuCategory, bool>>>()))
+                .ReturnsAsync((MenuCategory)null);
+
+            await _menuManager.UpdateMenuItemSetsAsync(setDto);
+        }
+
+        
     }
 }

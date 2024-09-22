@@ -7,7 +7,7 @@ namespace EntityLayer.Concrete
     public class MenuCategory
     {
         [Key]
-        public int Id { get; private set; }
+        public int Id { get;  set; }
 
         [Required]
         [MaxLength(100)]

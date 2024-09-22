@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace EntityLayer.DTOs.MenuItemSetDtos
 {
-    public class CreateMenuItemSetDto
+    public class UpdateMenuItemSetDto
     {
+        public int Id { get; set; }
         public int MenuCategoryId { get; set; }
         public string Name { get; set; }
         public List<int> MenuItemIds { get; set; }

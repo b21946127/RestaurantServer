@@ -99,7 +99,7 @@ public class MenuManager : IMenuService
     }
 
 
-    public async Task<MenuDto> AddOrUpdateMenuItemSetsAsync(CreateMenuItemSetDto setDto)
+    public async Task<MenuDto> AddMenuItemSetsAsync(CreateMenuItemSetDto setDto)
     {
         var menuCategory = await _menuCategoryDal.GetByAllAsync(mc => mc.Id == setDto.MenuCategoryId);
         if (menuCategory == null)
@@ -107,27 +107,15 @@ public class MenuManager : IMenuService
             throw new Exception($"MenuCategory with ID {setDto.MenuCategoryId} does not exist.");
         }
 
-        MenuItemSet existingMenuItemSet = await _menuItemSetDal.GetByAllAsync(ms => ms.Id == setDto.Id);
-        MenuItemSet menuItemSet;
 
-        if (existingMenuItemSet != null)
+        MenuItemSet menuItemSet = new MenuItemSet
         {
-            existingMenuItemSet.Name = setDto.Name;
-            menuItemSet = existingMenuItemSet;
+            Name = setDto.Name,
+            MenuCategory = menuCategory,
+            MenuItemMenuItemSets = new List<MenuItemMenuItemSet>()
+        };
 
-            menuItemSet.MenuItemMenuItemSets.Clear();
-        }
-        else
-        {
-            menuItemSet = new MenuItemSet
-            {
-                Name = setDto.Name,
-                MenuCategory = menuCategory,
-                MenuItemMenuItemSets = new List<MenuItemMenuItemSet>()
-            };
-
-            await _menuItemSetDal.InsertAsync(menuItemSet);
-        }
+        await _menuItemSetDal.InsertAsync(menuItemSet);
 
         foreach (int itemId in setDto.MenuItemIds)
         {
@@ -155,6 +143,83 @@ public class MenuManager : IMenuService
             {
                 throw new Exception($"MenuItem with ID {itemId} does not exist.");
             }
+        }
+        if (menuCategory.MenuItemSets == null)
+        {
+            menuCategory.MenuItemSets = new List<MenuItemSet>();
+        }
+
+        menuCategory.MenuItemSets.Add(menuItemSet);
+        await _menuCategoryDal.UpdateAsync(menuCategory);
+
+        if (menuCategory.Menu == null)
+        {
+            throw new Exception($"Menu for MenuCategory with ID {setDto.MenuCategoryId} does not exist.");
+        }
+
+        if (Enum.TryParse<DayOfWeekEnum>(menuCategory.Menu.DayOfWeek.ToString(), true, out var dayEnum))
+        {
+            var menu = await _menuDal.GetByAll(m => m.DayOfWeek == dayEnum);
+            if (menu == null)
+            {
+                throw new Exception($"No menu found for the day: {menuCategory.Menu.DayOfWeek}");
+            }
+
+            return _mapper.Map<MenuDto>(menu);
+        }
+        else
+        {
+            throw new ArgumentException($"Invalid day of the week: {menuCategory.Menu.DayOfWeek}");
+        }
+    }
+
+    public async Task<MenuDto> UpdateMenuItemSetsAsync(UpdateMenuItemSetDto setDto)
+    {
+        var menuCategory = await _menuCategoryDal.GetByAllAsync(mc => mc.Id == setDto.MenuCategoryId);
+        if (menuCategory == null)
+        {
+            throw new Exception($"MenuCategory with ID {setDto.MenuCategoryId} does not exist.");
+        }
+
+        MenuItemSet existingMenuItemSet = await _menuItemSetDal.GetByAllAsync(ms => ms.Id == setDto.Id);
+        MenuItemSet menuItemSet;
+
+        existingMenuItemSet.Name = setDto.Name;
+        menuItemSet = existingMenuItemSet;
+
+        menuItemSet.MenuItemMenuItemSets.Clear();
+
+        foreach (int itemId in setDto.MenuItemIds)
+        {
+            MenuItem existingMenuItem = await _menuItemDal.GetByAll(mi => mi.Id == itemId);
+            if (existingMenuItem != null)
+            {
+                MenuItemMenuItemSet menuItemMenuItemSet = new MenuItemMenuItemSet
+                {
+                    MenuItem = existingMenuItem,
+                    MenuItemId = existingMenuItem.Id,
+                    MenuItemSet = menuItemSet,
+                    MenuItemSetId = menuItemSet.Id
+                };
+                menuItemSet.MenuItemMenuItemSets.Add(menuItemMenuItemSet);
+
+                if (existingMenuItem.MenuItemMenuItemSets == null)
+                {
+                    existingMenuItem.MenuItemMenuItemSets = new List<MenuItemMenuItemSet>();
+                }
+                existingMenuItem.MenuItemMenuItemSets.Add(menuItemMenuItemSet);
+
+                await _menuItemMenuItemSetDal.InsertAsync(menuItemMenuItemSet);
+            }
+            else
+            {
+                throw new Exception($"MenuItem with ID {itemId} does not exist.");
+            }
+        }
+
+        if (menuCategory.MenuItemSets == null)
+        {
+            menuCategory.MenuItemSets = new List<MenuItemSet>();
         }
 
         menuCategory.MenuItemSets.Add(menuItemSet);

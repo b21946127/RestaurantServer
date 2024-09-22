@@ -1,4 +1,5 @@
 ﻿using BusinessLayer.Abstract;
+using EntityLayer.DTOs.MenuCategoryDtos;
 using EntityLayer.DTOs.MenuDtos;
 using EntityLayer.DTOs.MenuItemSetDtos;
 using Microsoft.AspNetCore.Mvc;
@@ -87,7 +88,7 @@ namespace RestaurantServer.Tests.Controllers
             // Arrange
             var createMenuItemSetDto = new CreateMenuItemSetDto();
             var menuDto = new MenuDto();
-            _menuServiceMock.Setup(m => m.AddOrUpdateMenuItemSetsAsync(createMenuItemSetDto)).ReturnsAsync(menuDto);
+            _menuServiceMock.Setup(m => m.AddMenuItemSetsAsync(createMenuItemSetDto)).ReturnsAsync(menuDto);
 
             // Act
             var result = await _menuController.AddMenuItemSet(createMenuItemSetDto);
@@ -97,6 +98,65 @@ namespace RestaurantServer.Tests.Controllers
             var okResult = result as OkObjectResult;
             Assert.AreEqual(menuDto, okResult.Value);
         }
+
+        [TestMethod]
+        public async Task UpdateMenuItemSet_ReturnsOk_WhenItemSetIsUpdated()
+        {
+            // Arrange
+            var updateMenuItemSetDto = new UpdateMenuItemSetDto
+            {
+                Id = 1,
+                MenuCategoryId = 1,
+                Name = "Test",
+            };
+
+            var updatedMenuDto = new MenuDto
+            {
+                 Id = 1,
+                DayOfWeek = "Monday",
+                MenuCategories = new List<MenuCategoryDto>
+                {
+                    new MenuCategoryDto
+                    {
+                        Id = 1,
+                        CategoryName = "Test",
+                        MenuItemSets = new List<MenuItemSetDto>
+                        {
+                            new MenuItemSetDto
+                            {
+                                Id = 1,
+                                Name = "Test",
+                            }
+                        }
+                    }
+                }
+
+            };
+
+            _menuServiceMock.Setup(m => m.UpdateMenuItemSetsAsync(updateMenuItemSetDto)).ReturnsAsync(updatedMenuDto);
+
+            // Act
+            var result = await _menuController.UpdateMenuItemSet(updateMenuItemSetDto);
+
+            // Assert
+            Assert.IsInstanceOfType(result, typeof(OkObjectResult), "Expected OkObjectResult.");
+            var okResult = result as OkObjectResult;
+            Assert.IsNotNull(okResult, "Result should not be null.");
+            Assert.AreEqual(updatedMenuDto, okResult.Value, "Returned menuDto does not match the expected value.");
+        }
+
+        [TestMethod]
+        public async Task UpdateMenuItemSet_ReturnsBadRequest_WhenDtoIsNull()
+        {
+            // Act
+            var result = await _menuController.UpdateMenuItemSet(null);
+
+            // Assert
+            var badRequestResult = result as BadRequestObjectResult;
+            Assert.IsNotNull(badRequestResult, "Expected BadRequestObjectResult.");
+            Assert.AreEqual("Menu data is required.", badRequestResult.Value, "Error message does not match.");
+        }
+
 
         [TestMethod]
         public async Task AddMenuItemSet_ReturnsBadRequest_WhenDtoIsNull()

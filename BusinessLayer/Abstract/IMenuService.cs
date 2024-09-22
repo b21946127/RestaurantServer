@@ -13,7 +13,8 @@ namespace BusinessLayer.Abstract
     {
         Task<MenuDto> GetMenuByDayAsync(string dayOfWeek);
         Task<MenuDto> AddNewMenuAsync(CreateMenuDto createMenuDto);
-        Task<MenuDto> AddOrUpdateMenuItemSetsAsync(CreateMenuItemSetDto setDto);
+        Task<MenuDto> AddMenuItemSetsAsync(CreateMenuItemSetDto setDto);
+        Task<MenuDto> UpdateMenuItemSetsAsync(UpdateMenuItemSetDto setDto);
         Task<MenuDto> UpdateMenuAsync(UpdateMenuDto updateMenuDto);
         Task<bool> DeleteMenuAsync(int menuId);
     }

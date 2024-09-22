@@ -1,12 +1,7 @@
 ﻿using BusinessLayer.Abstract;
-using EntityLayer.Concrete;
-using EntityLayer.DTOs.MenuCategoryDtos;
 using EntityLayer.DTOs.MenuDtos;
-using EntityLayer.DTOs.MenuItemDtos;
 using EntityLayer.DTOs.MenuItemSetDtos;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace RestaurantServer.Controllers
 {
@@ -34,7 +29,7 @@ namespace RestaurantServer.Controllers
             return Ok(menu);
         }
 
-        [HttpPost("AddNewMenu",Name="AddNewMenu")]
+        [HttpPost("AddNewMenu", Name = "AddNewMenu")]
         public async Task<IActionResult> AddNewMenu([FromBody] CreateMenuDto createMenuDto)
         {
             if (createMenuDto == null)
@@ -42,26 +37,26 @@ namespace RestaurantServer.Controllers
                 return BadRequest("Menu data is required.");
             }
 
-        
+
 
             var menu = await _menuService.AddNewMenuAsync(createMenuDto);
             return Ok(menu);
         }
 
-        [HttpPost("AddMenuItemSet",Name ="AddMenuItemSet")]
-        public async Task<IActionResult> AddMenuItemSet([FromBody] CreateMenuItemSetDto createMenuItemSet)
+        [HttpPost("AddMenuItemSet", Name = "AddMenuItemSet")]
+        public async Task<IActionResult> AddMenuItemSet([FromBody] CreateMenuItemSetDto createMenuItemSetDto)
         {
-            if(createMenuItemSet == null)
+            if (createMenuItemSetDto == null)
             {
                 return BadRequest("Menu Item Set Data is required.");
             }
 
-            MenuDto menu = await _menuService.AddOrUpdateMenuItemSetsAsync(createMenuItemSet);
+            MenuDto menu = await _menuService.AddMenuItemSetsAsync(createMenuItemSetDto);
             return Ok(menu);
         }
 
         [HttpPut("UpdateMenu", Name = "UpdateMenu")]
-        public async Task<IActionResult> UpdateMenu( [FromBody] UpdateMenuDto updateMenuDto)
+        public async Task<IActionResult> UpdateMenu([FromBody] UpdateMenuDto updateMenuDto)
         {
             if (updateMenuDto == null)
             {
@@ -72,7 +67,21 @@ namespace RestaurantServer.Controllers
             return Ok(updatedMenu);
         }
 
-        [HttpDelete("DeleteMenu/{id}", Name ="DeleteMenu")]
+        [HttpPut("UpdateMenuItemSet", Name = "UpdateMenuItemSet")]
+        public async Task<IActionResult> UpdateMenuItemSet([FromBody] UpdateMenuItemSetDto updateMenuItemSet)
+        {
+            if (updateMenuItemSet == null)
+            {
+                return BadRequest("Menu data is required.");
+            }
+
+
+
+            var menu = await _menuService.UpdateMenuItemSetsAsync(updateMenuItemSet);
+            return Ok(menu);
+        }
+
+        [HttpDelete("DeleteMenu/{id}", Name = "DeleteMenu")]
         public async Task<IActionResult> DeleteMenu(int id)
         {
             var result = await _menuService.DeleteMenuAsync(id);
