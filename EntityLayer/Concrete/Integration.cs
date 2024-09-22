@@ -7,10 +7,11 @@ namespace EntityLayer.Concrete
     public class Integration
     {
         [Key]
-        public string Id { get; private set; }
+        public int Id { get; private set; }
 
-        [Required]
         public string Name { get; set; } 
+
+        public Boolean IsAllergen { get; set; }
 
     }
 }

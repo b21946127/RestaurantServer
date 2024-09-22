@@ -22,13 +22,19 @@ namespace DataAccessLayer.EntityFramework
             _context = context;
         }
 
-        public async Task<Menu> GetWithCategoriesAsync(Expression<Func<Menu, bool>> predicate)
+        public async Task<Menu> GetByAll(Expression<Func<Menu, bool>> predicate)
         {
             return await _context.Menus
                 .Include(menu => menu.MenuCategories)
-                    .ThenInclude(category => category.MenuCategoryItems) 
-                        .ThenInclude(mci => mci.MenuItem)
+                        .ThenInclude(mci => mci.MenuItems)
                           .ThenInclude(mO => mO.Options)
+                .Include(menu => menu.MenuCategories)
+                        .ThenInclude(mci => mci.MenuItems)
+                          .ThenInclude(mO => mO.Integrations)
+
+                 .Include(menu => menu.MenuCategories)
+                    .ThenInclude(mci => mci.MenuItemSets)
+                        .ThenInclude(mis => mis.MenuItemMenuItemSets)
                 .SingleOrDefaultAsync(predicate);
         }
 

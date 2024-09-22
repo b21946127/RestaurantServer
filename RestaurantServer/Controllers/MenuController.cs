@@ -1,7 +1,11 @@
 ﻿using BusinessLayer.Abstract;
-using EntityLayer.DTOs;
+using EntityLayer.Concrete;
+using EntityLayer.DTOs.MenuCategoryDtos;
+using EntityLayer.DTOs.MenuDtos;
+using EntityLayer.DTOs.MenuItemDtos;
+using EntityLayer.DTOs.MenuItemSetDtos;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using RestaurantServer.DTOs;
 using System.Threading.Tasks;
 
 namespace RestaurantServer.Controllers
@@ -11,17 +15,13 @@ namespace RestaurantServer.Controllers
     public class MenuController : ControllerBase
     {
         private readonly IMenuService _menuService;
-        private readonly IMenuCategoryService _menuCategoryService;
-        private readonly IMenuItemService _menuItemService;
 
-        public MenuController(IMenuService menuService, IMenuCategoryService menuCategoryService, IMenuItemService menuItemService)
+        public MenuController(IMenuService menuService)
         {
             _menuService = menuService;
-            _menuCategoryService = menuCategoryService;
-            _menuItemService = menuItemService;
         }
 
-        [HttpGet("{dayOfWeek}", Name = "GetMenuByDay")]
+        [HttpGet("GetMenuByDay/{dayOfWeek}", Name = "GetMenuByDay")]
         public async Task<IActionResult> GetMenuByDay(string dayOfWeek)
         {
             var menu = await _menuService.GetMenuByDayAsync(dayOfWeek);
@@ -34,61 +34,55 @@ namespace RestaurantServer.Controllers
             return Ok(menu);
         }
 
-        [HttpPost("CreateMenuCategory", Name = "CreateMenuCategory")]
-        public async Task<IActionResult> CreateMenuCategory([FromBody] CreateMenuCategoryDto createMenuCategoryDto)
+        [HttpPost("AddNewMenu",Name="AddNewMenu")]
+        public async Task<IActionResult> AddNewMenu([FromBody] CreateMenuDto createMenuDto)
         {
-            if (!ModelState.IsValid)
+            if (createMenuDto == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest("Menu data is required.");
             }
 
-            await _menuCategoryService.MenuCategoryAddAsync(createMenuCategoryDto);
+        
 
-            return CreatedAtRoute("CreateMenuCategory", new { id = createMenuCategoryDto.CategoryName }, "Menu category created successfully.");
+            var menu = await _menuService.AddNewMenuAsync(createMenuDto);
+            return Ok(menu);
         }
 
-        [HttpPost("CreateMenuItem", Name = "CreateMenuItem")]
-        public async Task<IActionResult> CreateMenuItem([FromBody] CreateMenuItemDto createMenuItemDto)
+        [HttpPost("AddMenuItemSet",Name ="AddMenuItemSet")]
+        public async Task<IActionResult> AddMenuItemSet([FromBody] CreateMenuItemSetDto createMenuItemSet)
         {
-            if (!ModelState.IsValid)
+            if(createMenuItemSet == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest("Menu Item Set Data is required.");
             }
 
-            await _menuItemService.CreateMenuItemAsync(createMenuItemDto);
-
-            return CreatedAtRoute("CreateMenuItem", new { id = createMenuItemDto.Name }, "Menu item created successfully.");
-        }
-
-        [HttpPost("CreateMenu", Name = "CreateMenu")]
-        public async Task<IActionResult> CreateMenu([FromBody] CreateMenuDto createMenuDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var menuDto = await _menuService.CreateNewMenuDayWithCategoriesAsync(createMenuDto);
-
-            return CreatedAtRoute("GetMenuByDay", new { dayOfWeek = createMenuDto.DayOfWeek }, $"Menu for {createMenuDto.DayOfWeek} created successfully.");
+            MenuDto menu = await _menuService.AddOrUpdateMenuItemSetsAsync(createMenuItemSet);
+            return Ok(menu);
         }
 
         [HttpPut("UpdateMenu", Name = "UpdateMenu")]
-        public async Task<IActionResult> UpdateMenu([FromBody] UpdateMenuDto updateMenuDto)
+        public async Task<IActionResult> UpdateMenu( [FromBody] UpdateMenuDto updateMenuDto)
         {
-            if (!ModelState.IsValid)
+            if (updateMenuDto == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest("Invalid menu data.");
             }
 
-            var updated = await _menuService.UpdateNewMenuDayWithCategoriesAsync(updateMenuDto);
+            var updatedMenu = await _menuService.UpdateMenuAsync(updateMenuDto);
+            return Ok(updatedMenu);
+        }
 
-            if (updated == null)
+        [HttpDelete("DeleteMenu/{id}", Name ="DeleteMenu")]
+        public async Task<IActionResult> DeleteMenu(int id)
+        {
+            var result = await _menuService.DeleteMenuAsync(id);
+
+            if (!result)
             {
-                return NotFound($"Menu for {updateMenuDto.DayOfWeek} not found.");
+                return NotFound($"Menu with ID {id} does not exist.");
             }
 
-            return Ok($"Menu for {updateMenuDto.DayOfWeek} updated successfully.");
+            return NoContent();
         }
     }
 }

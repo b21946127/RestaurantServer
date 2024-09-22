@@ -7,9 +7,9 @@ namespace EntityLayer.Concrete
     public class Order
     {
         [Key]
-        public int Id { get; private set; }
+        public int Id { get;  set; }
 
-        public User User { get; set; }
+        public Customer Customer { get; set; }
 
         [Required]
         public DateTime OrderTime { get; set; } 

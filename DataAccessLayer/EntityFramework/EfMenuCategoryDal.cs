@@ -15,10 +15,20 @@ namespace DataAccessLayer.EntityFramework
     public class EfMenuCategoryDal : GenericRepository<MenuCategory>, IMenuCategoryDal
 
     {
+        Context _context;
+
         public EfMenuCategoryDal(Context context) : base(context)
         {
+            _context = context;
         }
 
-
+        public async Task<MenuCategory> GetByAllAsync(Expression<Func<MenuCategory, bool>> predicate)
+        {
+            return await _context.MenuCategories
+                .Include(menuCategory => menuCategory.Menu)
+                .Include(menuCategory => menuCategory.MenuItems)
+                .Include(menuCategory => menuCategory.MenuItemSets)
+                .SingleOrDefaultAsync(predicate);
+        }
     }
-}
+}   

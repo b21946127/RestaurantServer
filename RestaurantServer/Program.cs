@@ -3,7 +3,9 @@ using BusinessLayer.Concrete;
 using DataAccessLayer.Abstract;
 using DataAccessLayer.Concrete;
 using DataAccessLayer.EntityFramework;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +18,23 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<Context>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("WebApiDatabase")));
 
+// Register AutoMapper
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 // Register repositories and managers
 builder.Services.AddScoped<IMenuDal, EfMenuDal>();
 builder.Services.AddScoped<IMenuItemDal, EfMenuItemDal>();
 builder.Services.AddScoped<IMenuCategoryDal, EfMenuCategoryDal>();
-builder.Services.AddScoped<IMenuCategoryMenuItemDal, EfMenuCategoryMenuItemDal>();
-builder.Services.AddScoped<MenuManager>();
+builder.Services.AddScoped<IMenuItemSetDal, EfMenuItemSetDal>();
+builder.Services.AddScoped<IMenuItemOptionDal, EfMenuItemOptionDal>();
+builder.Services.AddScoped<IIntegrationDal, EfIntegrationDal>();
+builder.Services.AddScoped<IMenuItemMenuItemSetDal, EfMenuItemMenuItemSetDal>();
+builder.Services.AddScoped<IMenuService, MenuManager>();
+builder.Services.AddScoped<IOrderDal, EfOrderDal>();
+builder.Services.AddScoped<IOrderItemDal, EfOrderItemDal>();
+builder.Services.AddScoped<IOrderService, OrderManager>();
+builder.Services.AddScoped<ICustomerDal, EfCustomerDal>();
+
 
 
 var app = builder.Build();

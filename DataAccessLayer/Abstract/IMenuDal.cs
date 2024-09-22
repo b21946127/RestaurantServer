@@ -10,7 +10,6 @@ namespace DataAccessLayer.Abstract
 {
     public interface IMenuDal : IRepository<Menu>
     {
-        Task<Menu> GetWithCategoriesAsync(Expression<Func<Menu, bool>> predicate);
-
+        Task<Menu> GetByAll(Expression<Func<Menu, bool>> predicate);
     }
 }

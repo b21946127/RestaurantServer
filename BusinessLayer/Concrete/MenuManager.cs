@@ -1,177 +1,328 @@
-﻿using BusinessLayer.Abstract;
+﻿using AutoMapper;
+using BusinessLayer.Abstract;
 using DataAccessLayer.Abstract;
 using EntityLayer.Concrete;
-using EntityLayer.DTOs;
-using RestaurantServer.DTOs;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using EntityLayer.DTOs.MenuDtos;
+using EntityLayer.DTOs.MenuItemDtos;
+using EntityLayer.DTOs.MenuItemSetDtos;
 
-namespace BusinessLayer.Concrete
+public class MenuManager : IMenuService
 {
-    public class MenuManager : IMenuService
+    readonly IMenuDal _menuDal;
+    readonly IMenuCategoryDal _menuCategoryDal;
+    readonly IMenuItemDal _menuItemDal;
+    readonly IMenuItemSetDal _menuItemSetDal;
+    readonly IIntegrationDal _integrationDal;
+    readonly IMenuItemOptionDal _optionDal;
+    readonly IMenuItemMenuItemSetDal _menuItemMenuItemSetDal;
+    readonly IMapper _mapper;
+
+    public MenuManager(IMenuDal menuDal, IMenuCategoryDal menuCategoryDal, IMenuItemDal menuItemDal, IMenuItemSetDal menuItemSetDal, IIntegrationDal integrationDal, IMenuItemOptionDal optionDal, IMenuItemMenuItemSetDal menuItemMenuItemSetDal, IMapper mapper)
     {
-        readonly IMenuDal _menuDal;
-        readonly IMenuCategoryDal _menuCategoryDal;
+        _menuDal = menuDal;
+        _menuCategoryDal = menuCategoryDal;
+        _menuItemDal = menuItemDal;
+        _menuItemSetDal = menuItemSetDal;
+        _integrationDal = integrationDal;
+        _optionDal = optionDal;
+        _menuItemMenuItemSetDal = menuItemMenuItemSetDal;
+        _mapper = mapper;
 
-        public MenuManager(IMenuDal menuDal,IMenuCategoryDal menuCategoryDal)
+    }
+
+    public async Task<MenuDto> GetMenuByDayAsync(string dayOfWeek)
+    {
+        if (Enum.TryParse<DayOfWeekEnum>(dayOfWeek, true, out var dayEnum))
         {
-            _menuDal = menuDal;
-            _menuCategoryDal = menuCategoryDal;
-        }
-
-        public async Task<MenuDto> GetMenuByDayAsync(string dayOfWeek)
-        {
-            if (Enum.TryParse<DayOfWeekEnum>(dayOfWeek, true, out var dayEnum))
-            {
-                Menu menu = await _menuDal.GetWithCategoriesAsync(menu => menu.DayOfWeek == dayEnum);
-
-                if (menu == null)
-                {
-                    throw new Exception($"No menu found for the day: {dayOfWeek}");
-                }
-
-                var menuDto = new MenuDto
-                {
-                    DayOfWeek = menu.DayOfWeek.ToString(),
-                    MenuCategories = menu.MenuCategories.Select(mc => new MenuCategoryDto
-                    {
-                        Id = mc.Id,
-                        CategoryName = mc.CategoryName,
-                        MenuItems = mc.MenuCategoryItems.Select(mci => new MenuItemDto
-                        {
-                            Id = mci.MenuItem.Id,
-                            Name = mci.MenuItem.Name,
-                            Price = mci.MenuItem.Price,
-                            Portion = mci.MenuItem.Portion,
-                            Options = mci.MenuItem.Options.Select(o => new MenuItemOptionDto
-                            {
-                                Id = o.Id,
-                                Name = o.Name,
-                                Color = o.Color,
-                            }).ToList()
-                        }).ToList()
-                    }).ToList()
-                };
-
-                return menuDto;
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid day of the week: {dayOfWeek}");
-            }
-        }
-
-
-        public async Task<MenuDto> CreateNewMenuDayWithCategoriesAsync(CreateMenuDto createMenuDto)
-        {
-            Menu menu = null;
-
-            if (Enum.TryParse<DayOfWeekEnum>(createMenuDto.DayOfWeek, true, out var dayEnum))
-            {
-                try { 
-                menu = new Menu
-                {
-                    DayOfWeek = dayEnum
-                };
-                }
-                catch (Exception ex)
-                {
-                   throw new Exception($"There is already a menu for: {dayEnum}");
-                }
-            }
-
-
-            menu.MenuCategories = createMenuDto.MenuCategories.Select(mc => _menuCategoryDal.Get(x => x.Id == mc.Id)).ToList();
-
-            await _menuDal.InsertAsync(menu);
-
-            var menuDto = new MenuDto
-            {
-                DayOfWeek = menu.DayOfWeek.ToString(),
-                MenuCategories = menu.MenuCategories.Select(mc => new MenuCategoryDto
-                {
-                    Id = mc.Id,
-                    CategoryName = mc.CategoryName,
-                    MenuItems = mc.MenuCategoryItems.Select(mci => new MenuItemDto
-                    {
-                        Id = mci.MenuItem.Id,
-                        Name = mci.MenuItem.Name,
-                        Price = mci.MenuItem.Price,
-                        Portion = mci.MenuItem.Portion,
-                        Options = mci.MenuItem.Options.Select(o => new MenuItemOptionDto
-                        {
-                            Id = o.Id,
-                            Name = o.Name,
-                            Color = o.Color,
-                        }).ToList()
-                    }).ToList()
-                }).ToList()
-            };
-
-            return menuDto;
-        }
-
-        public async Task<MenuDto> UpdateNewMenuDayWithCategoriesAsync(UpdateMenuDto updateMenuDto)
-        {
-
-            if (Enum.TryParse<DayOfWeekEnum>(updateMenuDto.DayOfWeek, true, out var dayEnum))
-            {
-                Menu menu = await _menuDal.GetWithCategoriesAsync(menu => menu.DayOfWeek == dayEnum);
-
-
-                if (menu == null)
-                {
-                    throw new Exception($"No menu found for the day: {dayEnum}");
-                }
-
-
-                menu.MenuCategories = updateMenuDto.MenuCategories.Select(mc => _menuCategoryDal.Get(x => x.Id == mc.Id)).ToList();
-
-                await _menuDal.InsertAsync(menu);
-
-                var menuDto = new MenuDto
-                {
-                    DayOfWeek = menu.DayOfWeek.ToString(),
-                    MenuCategories = menu.MenuCategories.Select(mc => new MenuCategoryDto
-                    {
-                        Id = mc.Id,
-                        CategoryName = mc.CategoryName,
-                        MenuItems = mc.MenuCategoryItems.Select(mci => new MenuItemDto
-                        {
-                            Id = mci.MenuItem.Id,
-                            Name = mci.MenuItem.Name,
-                            Price = mci.MenuItem.Price,
-                            Portion = mci.MenuItem.Portion,
-                            Options = mci.MenuItem.Options.Select(o => new MenuItemOptionDto
-                            {
-                                Id = o.Id,
-                                Name = o.Name,
-                                Color = o.Color,
-                            }).ToList()
-                        }).ToList()
-                    }).ToList()
-                };
-
-                return menuDto;
-
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid day of the week: {updateMenuDto.DayOfWeek}");
-            }
-        }
-
-        public async Task<bool> DeleteMenuAsync(int menuId)
-        {
-            var menu = await _menuDal.GetAsync(m => m.DayOfWeek == (DayOfWeekEnum)menuId);
+            var menu = await _menuDal.GetByAll(m => m.DayOfWeek == dayEnum);
             if (menu == null)
             {
-                return false;
+                throw new Exception($"No menu found for the day: {dayOfWeek}");
+            }
+            return _mapper.Map<MenuDto>(menu);
+        }
+        throw new ArgumentException($"Invalid day of the week: {dayOfWeek}");
+    }
+
+    public async Task<MenuDto> AddNewMenuAsync(CreateMenuDto createMenuDto)
+    {
+        if (!Enum.TryParse<DayOfWeekEnum>(createMenuDto.DayOfWeek, true, out var dayEnum))
+        {
+            throw new ArgumentException($"Invalid day of the week: {createMenuDto.DayOfWeek}");
+        }
+
+        var menu = await _menuDal.GetByAll(m => m.DayOfWeek == dayEnum);
+        if (menu == null)
+        {
+            throw new Exception($"No menu found for the day: {createMenuDto.DayOfWeek}");
+        }
+
+        menu.MenuCategories = new List<MenuCategory>();
+
+        foreach (var categoryDto in createMenuDto.MenuCategories)
+        {
+            var category = new MenuCategory
+            {
+                CategoryName = categoryDto.CategoryName,
+                MenuItems = new List<MenuItem>(),
+                MenuItemSets = new List<MenuItemSet>()
+            };
+
+            foreach (var itemDto in categoryDto.MenuItems)
+            {
+                var menuItem = new MenuItem
+                {
+                    Name = itemDto.Name,
+                    Portion = itemDto.Portion,
+                    Price = itemDto.Price,
+                    Integrations = itemDto.Integrations.Select(i => new Integration
+                    {
+                        Name = i.Name,
+                        IsAllergen = i.IsAllergen
+                    }).ToList(),
+                    Options = itemDto.Options.Select(o => new MenuItemOption
+                    {
+                        Name = o.Name,
+                        Color = o.Color
+                    }).ToList(),
+                    MenuItemMenuItemSets = new List<MenuItemMenuItemSet>()
+                };
+
+                category.MenuItems.Add(menuItem);
             }
 
-            await _menuDal.DeleteAsync(menu);
-            return true;
+            menu.MenuCategories.Add(category);
+        }
+
+        await _menuDal.UpdateAsync(menu);
+        return _mapper.Map<MenuDto>(menu);
+    }
+
+
+    public async Task<MenuDto> AddOrUpdateMenuItemSetsAsync(CreateMenuItemSetDto setDto)
+    {
+        var menuCategory = await _menuCategoryDal.GetByAllAsync(mc => mc.Id == setDto.MenuCategoryId);
+        if (menuCategory == null)
+        {
+            throw new Exception($"MenuCategory with ID {setDto.MenuCategoryId} does not exist.");
+        }
+
+        MenuItemSet existingMenuItemSet = await _menuItemSetDal.GetByAllAsync(ms => ms.Id == setDto.Id);
+        MenuItemSet menuItemSet;
+
+        if (existingMenuItemSet != null)
+        {
+            existingMenuItemSet.Name = setDto.Name;
+            menuItemSet = existingMenuItemSet;
+
+            menuItemSet.MenuItemMenuItemSets.Clear();
+        }
+        else
+        {
+            menuItemSet = new MenuItemSet
+            {
+                Name = setDto.Name,
+                MenuCategory = menuCategory,
+                MenuItemMenuItemSets = new List<MenuItemMenuItemSet>()
+            };
+
+            await _menuItemSetDal.InsertAsync(menuItemSet);
+        }
+
+        foreach (int itemId in setDto.MenuItemIds)
+        {
+            MenuItem existingMenuItem = await _menuItemDal.GetByAll(mi => mi.Id == itemId);
+            if (existingMenuItem != null)
+            {
+                MenuItemMenuItemSet menuItemMenuItemSet = new MenuItemMenuItemSet
+                {
+                    MenuItem = existingMenuItem,
+                    MenuItemId = existingMenuItem.Id,
+                    MenuItemSet = menuItemSet,
+                    MenuItemSetId = menuItemSet.Id
+                };
+                menuItemSet.MenuItemMenuItemSets.Add(menuItemMenuItemSet);
+
+                if (existingMenuItem.MenuItemMenuItemSets == null)
+                {
+                    existingMenuItem.MenuItemMenuItemSets = new List<MenuItemMenuItemSet>();
+                }
+                existingMenuItem.MenuItemMenuItemSets.Add(menuItemMenuItemSet);
+
+                await _menuItemMenuItemSetDal.InsertAsync(menuItemMenuItemSet);
+            }
+            else
+            {
+                throw new Exception($"MenuItem with ID {itemId} does not exist.");
+            }
+        }
+
+        menuCategory.MenuItemSets.Add(menuItemSet);
+        await _menuCategoryDal.UpdateAsync(menuCategory);
+
+        if (Enum.TryParse<DayOfWeekEnum>(menuCategory.Menu.DayOfWeek.ToString(), true, out var dayEnum))
+        {
+            var menu = await _menuDal.GetByAll(m => m.DayOfWeek == dayEnum);
+            if (menu == null)
+            {
+                throw new Exception($"No menu found for the day: {menuCategory.Menu.DayOfWeek}");
+            }
+
+            return _mapper.Map<MenuDto>(menu);
+        }
+        else
+        {
+            throw new ArgumentException($"Invalid day of the week: {menuCategory.Menu.DayOfWeek}");
         }
     }
+
+
+
+    public async Task<MenuDto> UpdateMenuAsync(UpdateMenuDto updateMenuDto)
+    {
+        if (!Enum.TryParse<DayOfWeekEnum>(updateMenuDto.DayOfWeek, true, out var dayOfWeek))
+        {
+            throw new Exception($"Invalid day of week: {updateMenuDto.DayOfWeek}");
+        }
+
+        Menu menu = await _menuDal.GetByAll(m => m.DayOfWeek == dayOfWeek);
+
+        if (menu == null)
+        {
+            throw new Exception($"No menu found for the day: {updateMenuDto.DayOfWeek}");
+
+        }
+
+        foreach (var categoryDto in updateMenuDto.MenuCategories)
+        {
+            MenuCategory category = menu.MenuCategories.FirstOrDefault(c => c.Id == categoryDto.Id);
+
+            if (category != null)
+            {
+                category.CategoryName = categoryDto.CategoryName;
+            }
+            else
+            {
+                category = new MenuCategory
+                {
+                    CategoryName = categoryDto.CategoryName,
+                    MenuItems = new List<MenuItem>(),
+                    MenuItemSets = new List<MenuItemSet>()
+                };
+                menu.MenuCategories.Add(category);
+            }
+
+            foreach (MenuItemDto itemDto in categoryDto.MenuItems)
+            {
+                MenuItem menuItem = category.MenuItems.FirstOrDefault(i => i.Id == itemDto.Id);
+
+                if (menuItem != null)
+                {
+                    menuItem.Name = itemDto.Name;
+                    menuItem.Portion = itemDto.Portion;
+                    menuItem.Price = itemDto.Price;
+
+                    menuItem.Options.Clear();
+
+                    if (itemDto.Options != null)
+                    {
+                        foreach (var optionDto in itemDto.Options)
+                        {
+                            var existingOption = menuItem.Options.FirstOrDefault(o => o.Name == optionDto.Name);
+                            if (existingOption != null)
+                            {
+                                existingOption.Color = optionDto.Color;
+                            }
+                            else
+                            {
+                                menuItem.Options.Add(new MenuItemOption
+                                {
+                                    Name = optionDto.Name,
+                                    Color = optionDto.Color
+                                });
+                            }
+                        }
+                    }
+
+                    menuItem.Integrations.Clear();
+                    foreach (var integrationDto in itemDto.Integrations)
+                    {
+                        Integration integration = await _integrationDal.GetAsync(i => i.Id == integrationDto.Id);
+                        if (integration != null)
+                        {
+                            menuItem.Integrations.Add(integration);
+                        }
+                        else
+                        {
+                            Integration integration1 = new Integration
+                            {
+                                Name = integration.Name,
+                                IsAllergen = integration.IsAllergen
+                            };
+
+                            menuItem.Integrations.Add(integration1);
+                        }
+                    }
+                }
+                else
+                {
+                    menuItem = new MenuItem
+                    {
+                        Name = itemDto.Name,
+                        Portion = itemDto.Portion,
+                        Price = itemDto.Price,
+                        Integrations = itemDto.Integrations.Select(i => new Integration
+                        {
+                            Name = i.Name,
+                            IsAllergen = i.IsAllergen
+                        }).ToList(),
+                        Options = itemDto.Options.Select(o => new MenuItemOption
+                        {
+                            Name = o.Name,
+                            Color = o.Color
+                        }
+                          ).ToList()
+                    };
+
+                    category.MenuItems.Add(menuItem);
+                }
+            }
+        }
+
+        await _menuDal.UpdateAsync(menu);
+        return _mapper.Map<MenuDto>(menu);
+    }
+
+
+
+    public async Task<bool> DeleteMenuAsync(int menuId)
+    {
+        Menu menu = await _menuDal.GetByAll(m => m.Id == menuId);
+        if (menu == null)
+        {
+            throw new Exception($"Menu with ID {menuId} does not exist.");
+        }
+
+        foreach (MenuCategory category in menu.MenuCategories)
+        {
+            foreach (MenuItem menuItem in category.MenuItems)
+            {
+                foreach (MenuItemOption option in menuItem.Options)
+                {
+                    await _optionDal.DeleteAsync(option);
+                }
+                foreach (Integration integration in menuItem.Integrations)
+                {
+                    await _integrationDal.DeleteAsync(integration);
+                }
+                await _menuItemDal.DeleteAsync(menuItem);
+            }
+
+            await _menuCategoryDal.DeleteAsync(category);
+        }
+
+        await _menuDal.DeleteAsync(menu);
+        return true;
+    }
+
 }

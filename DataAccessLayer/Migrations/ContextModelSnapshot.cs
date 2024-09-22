@@ -24,8 +24,14 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("EntityLayer.Concrete.Integration", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsAllergen")
+                        .HasColumnType("boolean");
 
                     b.Property<int?>("MenuItemId")
                         .HasColumnType("integer");
@@ -43,12 +49,58 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("EntityLayer.Concrete.Menu", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<int>("DayOfWeek")
                         .HasColumnType("integer");
 
-                    b.HasKey("DayOfWeek");
+                    b.HasKey("Id");
+
+                    b.HasIndex("DayOfWeek")
+                        .IsUnique();
 
                     b.ToTable("Menus");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            DayOfWeek = 0
+                        },
+                        new
+                        {
+                            Id = 2,
+                            DayOfWeek = 1
+                        },
+                        new
+                        {
+                            Id = 3,
+                            DayOfWeek = 2
+                        },
+                        new
+                        {
+                            Id = 4,
+                            DayOfWeek = 3
+                        },
+                        new
+                        {
+                            Id = 5,
+                            DayOfWeek = 4
+                        },
+                        new
+                        {
+                            Id = 6,
+                            DayOfWeek = 5
+                        },
+                        new
+                        {
+                            Id = 7,
+                            DayOfWeek = 6
+                        });
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.MenuCategory", b =>
@@ -64,32 +116,14 @@ namespace DataAccessLayer.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("MenuDayOfWeek")
+                    b.Property<int>("MenuId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MenuDayOfWeek");
+                    b.HasIndex("MenuId");
 
                     b.ToTable("MenuCategories");
-                });
-
-            modelBuilder.Entity("EntityLayer.Concrete.MenuCategoryMenuItem", b =>
-                {
-                    b.Property<int>("MenuCategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MenuItemId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
-
-                    b.HasKey("MenuCategoryId", "MenuItemId");
-
-                    b.HasIndex("MenuItemId");
-
-                    b.ToTable("MenuCategoryMenuItems");
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.MenuItem", b =>
@@ -100,7 +134,7 @@ namespace DataAccessLayer.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("MenuItemId")
+                    b.Property<int>("MenuCategoryId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
@@ -115,9 +149,49 @@ namespace DataAccessLayer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MenuItemId");
+                    b.HasIndex("MenuCategoryId");
 
                     b.ToTable("MenuItems");
+                });
+
+            modelBuilder.Entity("EntityLayer.Concrete.MenuItemMenuItemSet", b =>
+                {
+                    b.Property<int>("MenuItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MenuItemSetId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("MenuItemId", "MenuItemSetId");
+
+                    b.HasIndex("MenuItemSetId");
+
+                    b.ToTable("MenuItemMenuItemSets");
+                });
+
+            modelBuilder.Entity("EntityLayer.Concrete.MenuItemSet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MenuCategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MenuCategoryId");
+
+                    b.ToTable("MenuItemSets");
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.Order", b =>
@@ -128,18 +202,15 @@ namespace DataAccessLayer.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("OrderTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("CustomerId");
 
                     b.ToTable("Orders");
                 });
@@ -178,6 +249,11 @@ namespace DataAccessLayer.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -190,17 +266,17 @@ namespace DataAccessLayer.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Surname")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("User");
+                    b.ToTable("Users");
+
+                    b.HasDiscriminator().HasValue("User");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("MenuItemOption", b =>
@@ -229,6 +305,30 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("MenuItemOptions");
                 });
 
+            modelBuilder.Entity("EntityLayer.Concrete.Admin", b =>
+                {
+                    b.HasBaseType("EntityLayer.Concrete.User");
+
+                    b.HasDiscriminator().HasValue("Admin");
+                });
+
+            modelBuilder.Entity("EntityLayer.Concrete.Customer", b =>
+                {
+                    b.HasBaseType("EntityLayer.Concrete.User");
+
+                    b.HasDiscriminator().HasValue("Customer");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Email = "customer@xx.com",
+                            Name = "customer",
+                            Password = "customer",
+                            Surname = "customer"
+                        });
+                });
+
             modelBuilder.Entity("EntityLayer.Concrete.Integration", b =>
                 {
                     b.HasOne("EntityLayer.Concrete.MenuItem", null)
@@ -240,48 +340,63 @@ namespace DataAccessLayer.Migrations
                 {
                     b.HasOne("EntityLayer.Concrete.Menu", "Menu")
                         .WithMany("MenuCategories")
-                        .HasForeignKey("MenuDayOfWeek")
+                        .HasForeignKey("MenuId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Menu");
                 });
 
-            modelBuilder.Entity("EntityLayer.Concrete.MenuCategoryMenuItem", b =>
+            modelBuilder.Entity("EntityLayer.Concrete.MenuItem", b =>
                 {
                     b.HasOne("EntityLayer.Concrete.MenuCategory", "MenuCategory")
-                        .WithMany("MenuCategoryItems")
+                        .WithMany("MenuItems")
                         .HasForeignKey("MenuCategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("MenuCategory");
+                });
+
+            modelBuilder.Entity("EntityLayer.Concrete.MenuItemMenuItemSet", b =>
+                {
                     b.HasOne("EntityLayer.Concrete.MenuItem", "MenuItem")
-                        .WithMany("MenuCategoryItems")
+                        .WithMany("MenuItemMenuItemSets")
                         .HasForeignKey("MenuItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("MenuCategory");
+                    b.HasOne("EntityLayer.Concrete.MenuItemSet", "MenuItemSet")
+                        .WithMany("MenuItemMenuItemSets")
+                        .HasForeignKey("MenuItemSetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("MenuItem");
+
+                    b.Navigation("MenuItemSet");
                 });
 
-            modelBuilder.Entity("EntityLayer.Concrete.MenuItem", b =>
+            modelBuilder.Entity("EntityLayer.Concrete.MenuItemSet", b =>
                 {
-                    b.HasOne("EntityLayer.Concrete.MenuItem", null)
-                        .WithMany("SubItems")
-                        .HasForeignKey("MenuItemId");
+                    b.HasOne("EntityLayer.Concrete.MenuCategory", "MenuCategory")
+                        .WithMany("MenuItemSets")
+                        .HasForeignKey("MenuCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MenuCategory");
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.Order", b =>
                 {
-                    b.HasOne("EntityLayer.Concrete.User", "User")
+                    b.HasOne("EntityLayer.Concrete.Customer", "Customer")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.OrderItem", b =>
@@ -321,18 +436,23 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("EntityLayer.Concrete.MenuCategory", b =>
                 {
-                    b.Navigation("MenuCategoryItems");
+                    b.Navigation("MenuItemSets");
+
+                    b.Navigation("MenuItems");
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.MenuItem", b =>
                 {
                     b.Navigation("Integrations");
 
-                    b.Navigation("MenuCategoryItems");
+                    b.Navigation("MenuItemMenuItemSets");
 
                     b.Navigation("Options");
+                });
 
-                    b.Navigation("SubItems");
+            modelBuilder.Entity("EntityLayer.Concrete.MenuItemSet", b =>
+                {
+                    b.Navigation("MenuItemMenuItemSets");
                 });
 
             modelBuilder.Entity("EntityLayer.Concrete.Order", b =>

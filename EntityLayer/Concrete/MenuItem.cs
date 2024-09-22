@@ -15,13 +15,13 @@ namespace EntityLayer.Concrete
 
         public decimal Price { get; set; }
 
-        public ICollection<MenuCategoryMenuItem> MenuCategoryItems { get; set; }
+        public MenuCategory MenuCategory { get; set; }
 
         public ICollection<Integration> Integrations { get; set; }
 
-        public ICollection<MenuItem> SubItems { get; set; }
-
         public ICollection<MenuItemOption> Options { get; set; }
+
+        public ICollection<MenuItemMenuItemSet> MenuItemMenuItemSets { get; set; }
 
     }
 }

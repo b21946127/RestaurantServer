@@ -1,7 +1,6 @@
 ﻿using BusinessLayer.Abstract;
-using EntityLayer.DTOs;
+using EntityLayer.DTOs.OrderDtos;
 using Microsoft.AspNetCore.Mvc;
-using RestaurantServer.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -20,7 +19,7 @@ namespace RestaurantServer.Controllers
         }
 
         [HttpPost("CreateOrder", Name = "CreateOrder")]
-        public async Task<IActionResult> CreateOrder([FromBody] CreateOrder createOrder)
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto createOrder)
         {
             if (!ModelState.IsValid)
             {
@@ -30,7 +29,7 @@ namespace RestaurantServer.Controllers
             try
             {
                 var order = await _orderService.AddOrder(createOrder);
-                return CreatedAtRoute("GetOrderById", new { id = order.Id }, order);
+                return Ok( order);
             }
             catch (Exception ex)
             {
@@ -80,23 +79,5 @@ namespace RestaurantServer.Controllers
             }
         }
 
-        [HttpPut("UpdateOrder", Name = "UpdateOrder")]
-        public async Task<IActionResult> UpdateOrder([FromBody] UpdateOrderDto updateOrderDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                var updatedOrder = await _orderService.UpdateOrderById(updateOrderDto);
-                return Ok($"Order with ID {updateOrderDto.Id} updated successfully.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
     }
 }

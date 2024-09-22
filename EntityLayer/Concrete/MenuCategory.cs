@@ -13,7 +13,9 @@ namespace EntityLayer.Concrete
         [MaxLength(100)]
         public string CategoryName { get; set; }
 
-        public ICollection<MenuCategoryMenuItem> MenuCategoryItems { get; set; }
+        public ICollection<MenuItem> MenuItems { get; set; }
+
+        public ICollection<MenuItemSet> MenuItemSets { get; set; }
 
         public Menu Menu { get; set; }
     }
